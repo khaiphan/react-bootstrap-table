@@ -63,7 +63,7 @@ class TableHeader extends Component {
         !this.props.expandColumnBeforeSelectColumn &&
           <th className='react-bs-table-expand-cell'> </th>
     ]);
-    const { sortIndicator, sortList, onSort, reset } = this.props;
+    const { sortIndicator, sortList, onSort, reset, onResize } = this.props;
 
     React.Children.forEach(this.props.children, (elm) => {
       const { dataField, dataSort } = elm.props;
@@ -75,7 +75,8 @@ class TableHeader extends Component {
       }
       if ((rowSpan + rowIndex) === (rowCount + 1)) {
         rows[rowIndex].push(React.cloneElement(
-          elm, { reset, key: rowKey++, onSort, sort, sortIndicator, isOnlyHead: false }
+          elm, { reset, key: rowKey++, onSort, sort, sortIndicator, isOnlyHead: false, onResize,
+            getHeaderColGroup: this.getHeaderColGroup }
           ));
       } else {
         rows[rowIndex].push(React.cloneElement(
@@ -104,7 +105,7 @@ class TableHeader extends Component {
     );
   }
 
-  getHeaderColGrouop = () => {
+  getHeaderColGroup = () => {
     return this.refs.headerGrp.childNodes;
   }
 
@@ -154,7 +155,8 @@ TableHeader.propTypes = {
   reset: PropTypes.bool,
   expandColumnVisible: PropTypes.bool,
   expandColumnComponent: PropTypes.func,
-  expandColumnBeforeSelectColumn: PropTypes.bool
+  expandColumnBeforeSelectColumn: PropTypes.bool,
+  onResize: PropTypes.func
 };
 
 export default TableHeader;
