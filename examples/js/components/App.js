@@ -1,7 +1,7 @@
 /* eslint max-len: 0 */
 import React from 'react';
 import 'toastr/build/toastr.min.css';
-import '../../../css/react-bootstrap-table.css';
+import '../../../css/kp-react-bootstrap-table.css';
 import {
   Grid,
   Row,
