@@ -16367,8 +16367,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	          colSpan: this.props.colSpan,
 	          'data-is-only-head': this.props.isOnlyHead
 	        }, attr),
-	        children,
-	        sortCaret,
+	        _react2.default.createElement(
+	          'div',
+	          { className: 'sort-elements', onClick: this.handleColumnClick, style: { display: 'inline' } },
+	          children,
+	          sortCaret
+	        ),
 	        _react2.default.createElement(
 	          'div',
 	          { onClick: function onClick(e) {

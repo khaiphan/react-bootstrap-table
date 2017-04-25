@@ -1,6 +1,6 @@
 {
   "name": "kp-react-bootstrap-table",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "It's a react table for bootstrap modify for company projects",
   "main": "./lib/index.js",
   "repository": {

@@ -154,12 +154,12 @@ class TableHeaderColumn extends Component {
       <th ref='header-col'
           className={ classes }
           style={ thStyle }
-          onClick={ this.handleColumnClick }
+          // onClick={ this.handleColumnClick }
           rowSpan={ this.props.rowSpan }
           colSpan={ this.props.colSpan }
           data-is-only-head={ this.props.isOnlyHead }
           { ...attr }>
-        { children }{ sortCaret }
+        <div className={ `sort-elements` } onClick={ this.handleColumnClick } style={ { display: 'inline' } }>{ children }{ sortCaret }</div>
         <div onClick={ e => e.stopPropagation() }>
           { this.props.filter && !isOnlyHead ? this.getFilters() : null }
         </div>
