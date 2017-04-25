@@ -42,11 +42,11 @@ gulp.task('prod', ['umdBuild'], function() {
     .pipe(babel())
     .pipe(gulp.dest('./lib'));
   // build the css
-  gulp.src('./css/kp-kp-react-bootstrap-table.css')
+  gulp.src('./css/react-bootstrap-table.css')
     .pipe(concatCss("./kp-react-bootstrap-table.min.css"))
     .pipe(cssmin())
     .pipe(gulp.dest('./dist'));
-  gulp.src(['./css/kp-react-bootstrap-table.css', './css/toastr.css'])
+  gulp.src(['./css/react-bootstrap-table.css', './css/toastr.css'])
     .pipe(concatCss('./kp-react-bootstrap-table-all.min.css'))
     .pipe(cssmin())
     .pipe(gulp.dest('./dist'));
