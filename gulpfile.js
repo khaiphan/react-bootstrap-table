@@ -42,12 +42,12 @@ gulp.task('prod', ['umdBuild'], function() {
     .pipe(babel())
     .pipe(gulp.dest('./lib'));
   // build the css
-  gulp.src('./css/react-bootstrap-table.css')
-    .pipe(concatCss("./react-bootstrap-table.min.css"))
+  gulp.src('./css/kp-kp-react-bootstrap-table.css')
+    .pipe(concatCss("./kp-react-bootstrap-table.min.css"))
     .pipe(cssmin())
     .pipe(gulp.dest('./dist'));
-  gulp.src(['./css/react-bootstrap-table.css', './css/toastr.css'])
-    .pipe(concatCss('./react-bootstrap-table-all.min.css'))
+  gulp.src(['./css/kp-react-bootstrap-table.css', './css/toastr.css'])
+    .pipe(concatCss('./kp-react-bootstrap-table-all.min.css'))
     .pipe(cssmin())
     .pipe(gulp.dest('./dist'));
 });
@@ -116,7 +116,7 @@ gulp.task('example-server', function() {
 //
 //   if (demo)
 //     b = b.require(require.resolve('./src/index.js'), {
-//       expose: 'react-bootstrap-table'
+//       expose: 'kp-react-bootstrap-table'
 //     });
 //
 //   if (watching) {
