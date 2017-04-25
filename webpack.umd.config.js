@@ -18,7 +18,7 @@ var webpack = require('webpack');
 
 module.exports = {
   entry: {
-    'react-bootstrap-table': './src/index.js'
+    'kp-react-bootstrap-table': './src/index.js'
   },
   devtool: '#cheap-module-source-map',
   output: {
