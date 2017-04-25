@@ -16361,9 +16361,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        'th',
 	        _extends({ ref: 'header-col',
 	          className: classes,
-	          style: thStyle,
-	          onClick: this.handleColumnClick,
-	          rowSpan: this.props.rowSpan,
+	          style: thStyle
+	          // onClick={ this.handleColumnClick }
+	          , rowSpan: this.props.rowSpan,
 	          colSpan: this.props.colSpan,
 	          'data-is-only-head': this.props.isOnlyHead
 	        }, attr),
