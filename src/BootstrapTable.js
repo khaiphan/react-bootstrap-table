@@ -97,7 +97,6 @@ class BootstrapTable extends Component {
       keyField: keyField,
       colInfos: this.colInfos,
       multiColumnSearch: props.multiColumnSearch,
-      strictSearch: props.strictSearch,
       multiColumnSort: props.multiColumnSort,
       remote: this.props.remote
     });
@@ -178,11 +177,10 @@ class BootstrapTable extends Component {
   }
 
   reset() {
-    const { pageStartIndex } = this.props.options;
     this.store.clean();
     this.setState({
       data: this.getTableData(),
-      currPage: Util.getFirstPage(pageStartIndex),
+      currPage: 1,
       expanding: [],
       sizePerPage: Const.SIZE_PER_PAGE_LIST[0],
       selectedRowKeys: this.store.getSelectedRowKeys(),
@@ -379,7 +377,8 @@ class BootstrapTable extends Component {
             reset={ this.state.reset }
             expandColumnVisible={ expandColumnOptions.expandColumnVisible }
             expandColumnComponent={ expandColumnOptions.expandColumnComponent }
-            expandColumnBeforeSelectColumn={ expandColumnOptions.expandColumnBeforeSelectColumn }>
+            expandColumnBeforeSelectColumn={ expandColumnOptions.expandColumnBeforeSelectColumn }
+            onResize= { this._adjustBodyWidth }>
             { this.props.children }
           </TableHeader>
           <TableBody ref='body'
@@ -411,7 +410,6 @@ class BootstrapTable extends Component {
             withoutNoDataText={ this.props.options.withoutNoDataText }
             expanding={ this.state.expanding }
             onExpand={ this.handleExpandRow }
-            onlyOneExpanding={ this.props.options.onlyOneExpanding }
             beforeShowError={ this.props.options.beforeShowError }
             keyBoardNav={ this.props.keyBoardNav }
             onNavigateCell={ this.handleNavigateCell }
@@ -500,7 +498,18 @@ class BootstrapTable extends Component {
       return;
     }
 
-    const result = this.store.page(Util.getNormalizedPage(pageStartIndex, page), sizePerPage).get();
+    // We calculate an offset here in order to properly fetch the indexed data,
+    // despite the page start index not always being 1
+    let normalizedPage;
+    if (pageStartIndex !== undefined) {
+      const offset = Math.abs(Const.PAGE_START_INDEX - pageStartIndex);
+      normalizedPage = page + offset;
+    } else {
+      normalizedPage = page;
+    }
+
+    const result = this.store.page(normalizedPage, sizePerPage).get();
+
     this.setState({ data: result, reset: false });
   }
 
@@ -533,6 +542,8 @@ class BootstrapTable extends Component {
     let { x, y, currPage } = this.state;
     x += offSetX;
     y += offSetY;
+    // currPage += 1;
+    // console.log(currPage);
 
     const columns = this.store.getColInfos();
     const visibleRowSize = this.state.data.length;
@@ -655,17 +666,16 @@ class BootstrapTable extends Component {
 
   handleShowOnlySelected = () => {
     this.store.ignoreNonSelected();
-    const { pageStartIndex } = this.props.options;
     let result;
     if (this.props.pagination) {
-      result = this.store.page(Util.getNormalizedPage(pageStartIndex), this.state.sizePerPage).get();
+      result = this.store.page(1, this.state.sizePerPage).get();
     } else {
       result = this.store.get();
     }
     this.setState({
       data: result,
       reset: false,
-      currPage: Util.getFirstPage(pageStartIndex)
+      currPage: this.props.options.pageStartIndex || Const.PAGE_START_INDEX
     });
   }
 
@@ -848,14 +858,14 @@ class BootstrapTable extends Component {
   }
 
   handleFilterData = filterObj => {
-    const { onFilterChange, pageStartIndex } = this.props.options;
+    const { onFilterChange } = this.props.options;
     if (onFilterChange) {
       const colInfos = this.store.getColInfos();
       onFilterChange(filterObj, colInfos);
     }
 
     this.setState({
-      currPage: Util.getFirstPage(pageStartIndex),
+      currPage: this.props.options.pageStartIndex || Const.PAGE_START_INDEX,
       reset: false
     });
 
@@ -878,7 +888,7 @@ class BootstrapTable extends Component {
 
     if (this.props.pagination) {
       const { sizePerPage } = this.state;
-      result = this.store.page(Util.getNormalizedPage(pageStartIndex), sizePerPage).get();
+      result = this.store.page(1, sizePerPage).get();
     } else {
       result = this.store.get();
     }
@@ -933,14 +943,14 @@ class BootstrapTable extends Component {
     if (this.refs.toolbar) {
       this.refs.toolbar.setSearchInput(searchText);
     }
-    const { onSearchChange, pageStartIndex } = this.props.options;
+    const { onSearchChange } = this.props.options;
     if (onSearchChange) {
       const colInfos = this.store.getColInfos();
       onSearchChange(searchText, colInfos, this.props.multiColumnSearch);
     }
 
     this.setState({
-      currPage: Util.getFirstPage(pageStartIndex),
+      currPage: this.props.options.pageStartIndex || Const.PAGE_START_INDEX,
       reset: false
     });
 
@@ -963,7 +973,7 @@ class BootstrapTable extends Component {
     let result;
     if (this.props.pagination) {
       const { sizePerPage } = this.state;
-      result = this.store.page(Util.getNormalizedPage(pageStartIndex), sizePerPage).get();
+      result = this.store.page(1, sizePerPage).get();
     } else {
       result = this.store.get();
     }
@@ -1047,7 +1057,6 @@ class BootstrapTable extends Component {
             field: props.dataField,
             hiddenOnInsert: props.hiddenOnInsert,
             keyValidator: props.keyValidator,
-            customInsertEditor: props.customInsertEditor,
             // when you want same auto generate value and not allow edit, example ID field
             autoValue: props.autoValue || false,
             // for create editor, no params for column.editable() indicate that editor for new row
@@ -1062,7 +1071,6 @@ class BootstrapTable extends Component {
           name: children.props.headerText || children.props.children,
           field: children.props.dataField,
           editable: children.props.editable,
-          customInsertEditor: children.props.customInsertEditor,
           hiddenOnInsert: children.props.hiddenOnInsert,
           keyValidator: children.props.keyValidator
         } ];
@@ -1148,10 +1156,45 @@ class BootstrapTable extends Component {
     }
   }
 
+  _adjustBodyWidth = () => {
+    const header = this.refs.header.refs.header;
+    const headerContainer = this.refs.header.refs.container;
+    const headerRow = header.childNodes;
+    const bodyHeader = this.refs.body.getHeaderColGroup();
+    const bodyContainer = this.refs.body.refs.container;
+
+    const isScroll = Math.abs(headerContainer.offsetWidth - bodyContainer.childNodes[0].offsetWidth) > 5;
+    const scrollBarWidth = isScroll ? Util.getScrollBarWidth() : 0;
+    if (headerRow && headerRow[0]) {
+      for (let i = 0; i < headerRow[0].childNodes.length; i++) {
+        const cell = headerRow[0].childNodes[i];
+        let width = parseFloat(window.getComputedStyle(cell).width.replace('px', ''));
+
+        if (this.isIE) {
+          const paddingLeftWidth = parseFloat(window.getComputedStyle(cell).paddingLeft.replace('px', ''));
+          const paddingRightWidth = parseFloat(window.getComputedStyle(cell).paddingRight.replace('px', ''));
+          const borderRightWidth = parseFloat(window.getComputedStyle(cell).borderRightWidth.replace('px', ''));
+          const borderLeftWidth = parseFloat(window.getComputedStyle(cell).borderLeftWidth.replace('px', ''));
+          width = width + paddingLeftWidth + paddingRightWidth + borderRightWidth + borderLeftWidth;
+        }
+
+        const lastPadding = ((headerRow[0].childNodes.length - 1 === i) ? scrollBarWidth : 0);
+        if (width <= 0) {
+          width = 120;
+          cell.width = width - lastPadding + 'px';
+        }
+        const result = width - lastPadding + 'px';
+
+        bodyHeader[i].style.width = result;
+        bodyHeader[i].style.minWidth = result;
+      }
+    }
+  }
+
   _adjustHeaderWidth() {
-    const header = this.refs.header.getHeaderColGrouop();
+    const header = this.refs.header.getHeaderColGroup();
     const tbody = this.refs.body.refs.tbody;
-    const bodyHeader = this.refs.body.getHeaderColGrouop();
+    const bodyHeader = this.refs.body.getHeaderColGroup();
     const firstRow = tbody.childNodes[0];
     const isScroll = tbody.parentNode.getBoundingClientRect().height >
       tbody.parentNode.parentNode.getBoundingClientRect().height;
@@ -1225,11 +1268,11 @@ class BootstrapTable extends Component {
       const { sizePerPage } = this.state;
 
       if (atTheBeginning) {
-        const { pageStartIndex } = this.props.options;
-        result = this.store.page(Util.getNormalizedPage(pageStartIndex), sizePerPage).get();
+        const firstPage = this.props.options.pageStartIndex || Const.PAGE_START_INDEX;
+        result = this.store.page(firstPage, sizePerPage).get();
         this.setState({
           data: result,
-          currPage: Util.getFirstPage(pageStartIndex),
+          currPage: firstPage,
           reset: false
         });
       } else {
@@ -1299,8 +1342,6 @@ BootstrapTable.propTypes = {
   insertRow: PropTypes.bool,
   deleteRow: PropTypes.bool,
   search: PropTypes.bool,
-  multiColumnSearch: PropTypes.bool,
-  strictSearch: PropTypes.bool,
   columnFilter: PropTypes.bool,
   trClassName: PropTypes.any,
   tableStyle: PropTypes.object,
@@ -1388,7 +1429,6 @@ BootstrapTable.propTypes = {
     expandRowBgColor: PropTypes.string,
     expandBy: PropTypes.string,
     expanding: PropTypes.array,
-    onlyOneExpanding: PropTypes.bool,
     beforeShowError: PropTypes.func,
     printToolBar: PropTypes.bool
   }),
@@ -1451,7 +1491,6 @@ BootstrapTable.defaultProps = {
   deleteRow: false,
   search: false,
   multiColumnSearch: false,
-  strictSearch: undefined,
   multiColumnSort: 1,
   columnFilter: false,
   trClassName: '',
@@ -1505,7 +1544,7 @@ BootstrapTable.defaultProps = {
     nextPageTitle: Const.NEXT_PAGE_TITLE,
     firstPageTitle: Const.FIRST_PAGE_TITLE,
     lastPageTitle: Const.LAST_PAGE_TITLE,
-    pageStartIndex: 1,
+    pageStartIndex: undefined,
     searchDelayTime: undefined,
     exportCSVText: Const.EXPORT_CSV_TEXT,
     insertText: Const.INSERT_BTN_TEXT,
@@ -1533,7 +1572,6 @@ BootstrapTable.defaultProps = {
     expandRowBgColor: undefined,
     expandBy: Const.EXPAND_BY_ROW,
     expanding: [],
-    onlyOneExpanding: false,
     beforeShowError: undefined,
     printToolBar: true
   },

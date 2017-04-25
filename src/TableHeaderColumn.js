@@ -15,6 +15,12 @@ class TableHeaderColumn extends Component {
   constructor(props) {
     super(props);
     this.handleFilter = this.handleFilter.bind(this);
+
+    this.activeEl = null;
+    this.nMouseX = 0;
+    this.headerStartWidth = 0;
+    this.nextHeaderStartWidth = 0;
+    this.inResize = false;
   }
 
   componentWillReceiveProps(nextProps) {
@@ -78,6 +84,14 @@ class TableHeaderColumn extends Component {
 
   componentDidMount() {
     this.refs['header-col'].setAttribute('data-field', this.props.dataField);
+
+    const handlers = this.refs['header-col'].getElementsByClassName('resize-handler');
+    for (let i = 0; i < handlers.length; i++) {
+      const handler = handlers[i];
+      handler.addEventListener('mousedown', this.handleMouseDown);
+    }
+    document.addEventListener('mouseup', this.handleMouseUp);
+    document.addEventListener('mousemove', this.handleMouseMove);
   }
 
   render() {
@@ -125,7 +139,8 @@ class TableHeaderColumn extends Component {
 
     const classes = classSet(
       typeof className === 'function' ? className() : className,
-      !isOnlyHead && dataSort ? 'sort-column' : '');
+      !isOnlyHead && dataSort ? 'sort-column' : '',
+      'resizable');
 
     const attr = {};
     if (headerTitle) {
@@ -148,8 +163,72 @@ class TableHeaderColumn extends Component {
         <div onClick={ e => e.stopPropagation() }>
           { this.props.filter && !isOnlyHead ? this.getFilters() : null }
         </div>
+        <div className='resize-handler'></div>
       </th>
     );
+  }
+
+  handleMouseMove = (event) => {
+    if (!this.inResize) {
+      return;
+    }
+
+    event.preventDefault();
+    const mouseEvent = event || window.event;
+
+    const changeValue = mouseEvent.clientX - this.nMouseX;
+
+    if ((this.headerStartWidth + changeValue) <= 20 ||
+        (this.nextHeaderStartWidth - changeValue) <= 20) {
+      return;
+    }
+
+    const childIndex = Array.from(this.activeEl.parentNode.children).indexOf(this.activeEl);
+    const colGroup = this.props.getHeaderColGroup();
+
+    this.activeEl.style.width = String(this.headerStartWidth + changeValue) + 'px';
+    if (colGroup[childIndex] !== undefined) {
+      colGroup[childIndex].style.width = String(this.headerStartWidth + changeValue) + 'px';
+      colGroup[childIndex].style.minWidth = String(this.headerStartWidth + changeValue) + 'px';
+    }
+
+    this.activeEl.nextSibling.style.width = String(this.nextHeaderStartWidth - changeValue) + 'px';
+    if (colGroup[childIndex] !== undefined) {
+      colGroup[childIndex + 1].style.width = String(this.nextHeaderStartWidth - changeValue) + 'px';
+      colGroup[childIndex + 1].style.minWidth = String(this.nextHeaderStartWidth - changeValue) + 'px';
+    }
+
+    this.props.onResize();
+  }
+
+  handleMouseUp = () => {
+    if (this.inResize) {
+      this.inResize = false;
+    }
+  }
+
+  handleMouseDown = (event) => {
+    let bExit = true;
+    const mouseEvent = event || window.event;
+    for (let iNode = mouseEvent.target || mouseEvent.srcElement; iNode; iNode = iNode.parentNode) {
+      if (iNode.className.indexOf('resizable') !== -1) {
+        bExit = false;
+        this.activeEl = iNode;
+        break;
+      }
+    }
+    if (bExit ||
+        this.activeEl.nextSibling === null ||
+        this.activeEl.nodeName.toLowerCase() !== this.activeEl.nextSibling.nodeName.toLowerCase()) {
+      return;
+    }
+    event.stopImmediatePropagation();
+    this.inResize = true;
+    this.headerStartWidth = parseInt(window.getComputedStyle(this.activeEl).width, 10) || 0;
+    this.nextHeaderStartWidth = parseInt(window.getComputedStyle(this.activeEl.nextSibling).width, 10) || 0;
+    this.nMouseX = mouseEvent.clientX;
+
+    event.preventDefault();
   }
 
   cleanFiltered() {
@@ -270,6 +349,8 @@ TableHeaderColumn.propTypes = {
   tdAttr: PropTypes.object,
   tdStyle: PropTypes.object,
   thStyle: PropTypes.object,
+  onResize: PropTypes.func,
+  getHeaderColGroup: PropTypes.func,
   keyValidator: PropTypes.bool
 };
 
