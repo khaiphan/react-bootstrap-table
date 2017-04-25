@@ -24,7 +24,7 @@ module.exports = {
   output: {
     path: './dist',
     filename: '[name].js',
-    library: 'ReactBootstrapTable',
+    library: 'KpReactBootstrapTable',
     libraryTarget: 'umd'
   },
   externals: [{
